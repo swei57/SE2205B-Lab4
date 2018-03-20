@@ -29,17 +29,18 @@ public class HashedDictionaryOpenAddressingLinearInstrumented<K,V> implements Di
     private double MAX_LOAD_FACTOR = 0.5;
     
     
-        private static int totalProbes = 0;
+    private static int totalProbes = 0;
     
     public static void resetTotalProbes()
     {
        // add your code here
+        totalProbes=0;
     }  
 
     public static int getTotalProbes()
     {
         // Change the return statement
-        return 0;
+        return totalProbes;
     }  
     
     public HashedDictionaryOpenAddressingLinearInstrumented()
@@ -198,10 +199,14 @@ public class HashedDictionaryOpenAddressingLinearInstrumented<K,V> implements Di
             if ( hashTable[index].isIn() &&
                 key.equals(hashTable[index].getKey()) )
                     found = true; // key found
-            else // follow probe sequence
+            else{ // follow probe sequence
                 index = (index + 1) % hashTable.length; // Linear probing
+                totalProbes++;
+            }
         } // end while
-        
+                if(!found){
+                 totalProbes++;  
+                }
         // Assertion: Either key or  null is found at hashTable[index]
         int result = -1;
         
@@ -262,6 +267,7 @@ public class HashedDictionaryOpenAddressingLinearInstrumented<K,V> implements Di
                 } else // Follow probe sequence
                 {
                     index = (index + 1) % hashTable.length; // Linear probing
+                  //  totalProbes++;
                 }
             } else // Skip entries that were removed
             {
@@ -270,9 +276,15 @@ public class HashedDictionaryOpenAddressingLinearInstrumented<K,V> implements Di
                     removedStateIndex = index;
                 }
                 index = (index + 1) % hashTable.length; // Linear probing
+                //totalProbes++;
             } // end if
+            if(!found){
+                totalProbes++;
+            }
         } // end while
-        
+             if (!found) {
+                totalProbes++;
+            }
         
         // Assertion: Either key or null is found at hashTable[index]
         if (found || (removedStateIndex == -1) )

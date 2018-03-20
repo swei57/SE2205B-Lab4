@@ -1,6 +1,7 @@
 package hashtable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Random;
     
 /**
  * A class that implements the ADT dictionary by using hashing and
@@ -34,12 +35,13 @@ public class HashedDictionaryOpenAddressingPerfectInstrumented<K,V> implements D
     public static void resetTotalProbes()
     {
        // add your code here
+        totalProbes=0;
     }  
 
     public static int getTotalProbes()
     {
         // Change the return statement
-        return 0;
+        return totalProbes;
     }  
     
     public HashedDictionaryOpenAddressingPerfectInstrumented()
@@ -141,26 +143,33 @@ public class HashedDictionaryOpenAddressingPerfectInstrumented<K,V> implements D
         return !foundFactor;
     } // end getNextPrime    
     
-    
+    /*
     private int getHashIndex(K key){
         int val = key.toString().hashCode();
         val = Math.abs(val);
         val = val % hashTable.length;
         return val;
     } // end getHashIndex
+    */
     
-    
+    private Random getHashGenerator(K key){ //use for perfect hashing
+        int val = key.toString().hashCode();
+        val = Math.abs(val);
+        Random num = new Random();
+        num.setSeed(val);
+        return num;
+    }
     @Override
     public V getValue(K key)
     {
         checkInitialization();
         
         V result = null;
-        int index = getHashIndex(key);
-        index = locate(index, key);
+        Random index = getHashGenerator(key);
+        int newIndex = locate(index, key);
         
-        if (index != -1)
-            result = hashTable[index].getValue(); // Key found; get value
+        if (newIndex != -1)
+            result = hashTable[newIndex].getValue(); // Key found; get value
         // Else key not found; return null
         
         return result;
@@ -174,13 +183,13 @@ public class HashedDictionaryOpenAddressingPerfectInstrumented<K,V> implements D
         
         V removedValue = null;
         
-        int index = getHashIndex(key);
-        index = locate(index, key);
+        Random index = getHashGenerator(key);
+        int newIndex = locate(index, key);
         
-        if (index != -1)
+        if (newIndex != -1)
         { // Key found; flag entry as removed and return its value
-            removedValue = hashTable[index].getValue();
-            hashTable[index].setToRemoved();
+            removedValue = hashTable[newIndex].getValue();
+            hashTable[newIndex].setToRemoved();
             numberOfEntries--;
         } // end if
         
@@ -189,24 +198,28 @@ public class HashedDictionaryOpenAddressingPerfectInstrumented<K,V> implements D
     } // end remove
     
     // Precondition: checkInitialization has been called.
-    private int locate(int index, K key)
+    private int locate(Random index, K key)
     {
         boolean found = false;
-        
-        while ( !found && (hashTable[index] != null) )
+        int newIndex = index.nextInt(hashTable.length);
+        while ( !found && (hashTable[newIndex] != null) )
         {
-            if ( hashTable[index].isIn() &&
-                key.equals(hashTable[index].getKey()) )
+            if ( hashTable[newIndex].isIn() &&
+                key.equals(hashTable[newIndex].getKey()) )
                     found = true; // key found
-            else // follow probe sequence
-                index = (index + 1) % hashTable.length; // Linear probing
+            else{ // follow probe sequence
+                newIndex =index.nextInt(hashTable.length);
+                    totalProbes++;
+            }
         } // end while
-        
+                 if(!found){
+                 totalProbes++;  
+                }
         // Assertion: Either key or  null is found at hashTable[index]
         int result = -1;
         
         if (found)
-            result = index;
+            result = newIndex;
             
         return result;
     } // end locate
@@ -225,19 +238,19 @@ public class HashedDictionaryOpenAddressingPerfectInstrumented<K,V> implements D
         } else {
             V oldValue; // Value to return
 
-            int index = getHashIndex(key);
-            index = probe(index, key); // Check for and resolve collision
+            Random index = getHashGenerator(key);
+            int newIndex = probe(index, key); // Check for and resolve collision
 
             // Assertion: index is within legal range for hashTable
-            assert (index >= 0) && (index < hashTable.length);
+            assert (newIndex >= 0) && (newIndex < hashTable.length);
 
-            if ((hashTable[index] == null) || hashTable[index].isRemoved()) { // Key not found, so insert new entry
-                hashTable[index] = new TableEntry(key, value);
+            if ((hashTable[newIndex] == null) || hashTable[newIndex].isRemoved()) { // Key not found, so insert new entry
+                hashTable[newIndex] = new TableEntry(key, value);
                 numberOfEntries++;
                 oldValue = null;
             } else { // Key found; get old value for return and then replace it
-                oldValue = hashTable[index].getValue();
-                hashTable[index].setValue(value);
+                oldValue = hashTable[newIndex].getValue();
+                hashTable[newIndex].setValue(value);
             } // end if
 
             // Ensure that hash table is large enough for another add
@@ -250,33 +263,40 @@ public class HashedDictionaryOpenAddressingPerfectInstrumented<K,V> implements D
     } // end add
 
     // Precondition: checkInitialization has been called.
-    private int probe(int index, K key) {
+    private int probe(Random index, K key) {
         boolean found = false;
         int removedStateIndex = -1; // Index of first location in
         // removed state
-
-        while (!found && (hashTable[index] != null)) {
-            if (hashTable[index].isIn()) {
-                if (key.equals(hashTable[index].getKey())) {
+        int newIndex = index.nextInt(hashTable.length);
+        while (!found && (hashTable[newIndex] != null)) {
+            if (hashTable[newIndex].isIn()) {
+                if (key.equals(hashTable[newIndex].getKey())) {
                     found = true; // Key found
                 } else // Follow probe sequence
                 {
-                    index = (index + 1) % hashTable.length; // Linear probing
+                    newIndex = index.nextInt(hashTable.length);
+                   // totalProbes++;
                 }
             } else // Skip entries that were removed
             {
                 // Save index of first location in removed state
                 if (removedStateIndex == -1) {
-                    removedStateIndex = index;
+                    removedStateIndex = newIndex;
                 }
-                index = (index + 1) % hashTable.length; // Linear probing
+                newIndex = index.nextInt(hashTable.length);
+                //totalProbes++;
             } // end if
+                if(!found){
+                totalProbes++;
+                }
         } // end while
-        
+            if (!found) {
+                totalProbes++;
+            }
         
         // Assertion: Either key or null is found at hashTable[index]
         if (found || (removedStateIndex == -1) )
-            return index; // Index of either key or null
+            return newIndex; // Index of either key or null
         else
             return removedStateIndex; // Index of an available location
     } // end probe
@@ -319,10 +339,10 @@ public class HashedDictionaryOpenAddressingPerfectInstrumented<K,V> implements D
     {
         boolean result = false;
         
-        int index = getHashIndex(key);
-        index = locate(index, key);
+        Random index = getHashGenerator(key);
+        int newIndex = locate(index, key);
         
-        if (index != -1)
+        if (newIndex != -1)
             result = true; // key found; return true
         // else key not found; return false       
         return result;

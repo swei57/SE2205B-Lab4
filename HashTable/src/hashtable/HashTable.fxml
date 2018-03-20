@@ -38,16 +38,6 @@
                <items>
                   <MenuItem mnemonicParsing="false" onAction="#HashPerformance" text="Check Performance" />
                </items></Menu>
-            <Menu mnemonicParsing="false" text="Generating Random Keys">
-               <items>
-                  <MenuItem mnemonicParsing="false" text="Test Better Fibonacci" />
-                  <MenuItem mnemonicParsing="false" text="Test Tail Recursive Fibonacci" />
-               </items></Menu>
-            <Menu mnemonicParsing="false" text="Test Performance">
-               <items>
-                  <MenuItem mnemonicParsing="false" text="Test Time Basic Recursion" />
-                  <MenuItem mnemonicParsing="false" text="Test Time Better Recursion" />
-               </items></Menu>
         </menus>
       </MenuBar>
    </top>

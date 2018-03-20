@@ -37,16 +37,16 @@ public class HashTableController implements Initializable {
 
     @FXML
     TextField _seed;
-    
+
     @FXML
     TextField _insertCount;
-        
+
     @FXML
     TextField _load;
 
     @FXML
     TextField _startingSize;
-            
+
     int arraySize;
     int trials;
     int seed;
@@ -55,9 +55,6 @@ public class HashTableController implements Initializable {
     DictionaryInterface<Integer, Integer> table;
     TreeMap<Integer, Integer> reference;
     int insertCount;
-    int insertionLinearProbes = 0, insertionDoubleProbes = 0, insertionPerfectProbes = 0;
-    int successLinearProbes = 0, successDoubleProbes = 0, successPerfectProbes = 0;
-    int failureLinearProbes = 0, failureDoubleProbes = 0, failurePerfectProbes = 0;
     double load;
     int startingSize;
 
@@ -78,21 +75,24 @@ public class HashTableController implements Initializable {
     }
 
     public void HashPerformance() {
+        int insertionLinearProbes = 0, insertionDoubleProbes = 0, insertionPerfectProbes = 0;
+        int successLinearProbes = 0, successDoubleProbes = 0, successPerfectProbes = 0;
+        int failureLinearProbes = 0, failureDoubleProbes = 0, failurePerfectProbes = 0;
         arraySize = Integer.parseInt(this._arraySize.getText());
         trials = Integer.parseInt(this._trials.getText());
         seed = Integer.parseInt(this._seed.getText());
         insertCount = Integer.parseInt(this._insertCount.getText());
         load = Double.parseDouble(this._load.getText());
         startingSize = Integer.parseInt(this._startingSize.getText());
-        
+
         this.console.clear();
 
         for (int i = 0; i < trials; i++) {
-            stringData = generateRandomData(insertCount);
+            stringData = generateRandomData(insertCount * 2);
 
-            linearTable = new HashedDictionaryOpenAddressingLinearInstrumented<String, String>();
-            doubleTable = new HashedDictionaryOpenAddressingDoubleInstrumented<String, String>();
-            perfectTable = new HashedDictionaryOpenAddressingPerfectInstrumented<String, String>();
+            linearTable = new HashedDictionaryOpenAddressingLinearInstrumented<String, String>(startingSize);
+            doubleTable = new HashedDictionaryOpenAddressingDoubleInstrumented<String, String>(startingSize);
+            perfectTable = new HashedDictionaryOpenAddressingPerfectInstrumented<String, String>(startingSize);
 
             linearTable.setMaxLoadFactor(load);
             doubleTable.setMaxLoadFactor(load);
@@ -103,9 +103,9 @@ public class HashTableController implements Initializable {
             HashedDictionaryOpenAddressingPerfectInstrumented.resetTotalProbes();
 
             this.console.appendText("The data is: \n" + getString(stringData) + "\n\n");
-            insertAllData(linearTable, stringData);
-            insertAllData(doubleTable, stringData);
-            insertAllData(perfectTable, stringData);
+            insertHalfData(linearTable, stringData);
+            insertHalfData(doubleTable, stringData);
+            insertHalfData(perfectTable, stringData);
 
             insertionLinearProbes += HashedDictionaryOpenAddressingLinearInstrumented.getTotalProbes();
             insertionDoubleProbes += HashedDictionaryOpenAddressingDoubleInstrumented.getTotalProbes();
@@ -113,6 +113,29 @@ public class HashTableController implements Initializable {
 
             // ADD CODE HERE TO DO SUCCESSFULL AND FAILURE SEARCHES
             
+            HashedDictionaryOpenAddressingLinearInstrumented.resetTotalProbes();
+            HashedDictionaryOpenAddressingDoubleInstrumented.resetTotalProbes();
+            HashedDictionaryOpenAddressingPerfectInstrumented.resetTotalProbes();
+            
+            searchFirstHalf(linearTable, stringData);
+            searchFirstHalf(doubleTable, stringData);
+            searchFirstHalf(perfectTable, stringData);
+            
+            successLinearProbes += HashedDictionaryOpenAddressingLinearInstrumented.getTotalProbes();
+            successDoubleProbes += HashedDictionaryOpenAddressingDoubleInstrumented.getTotalProbes();
+            successPerfectProbes += HashedDictionaryOpenAddressingPerfectInstrumented.getTotalProbes();
+
+            HashedDictionaryOpenAddressingLinearInstrumented.resetTotalProbes();
+            HashedDictionaryOpenAddressingDoubleInstrumented.resetTotalProbes();
+            HashedDictionaryOpenAddressingPerfectInstrumented.resetTotalProbes();
+            
+            searchSecondHalf(linearTable, stringData);
+            searchSecondHalf(doubleTable, stringData);
+            searchSecondHalf(perfectTable, stringData);
+            
+            failureLinearProbes += HashedDictionaryOpenAddressingLinearInstrumented.getTotalProbes();
+            failureDoubleProbes += HashedDictionaryOpenAddressingDoubleInstrumented.getTotalProbes();
+            failurePerfectProbes += HashedDictionaryOpenAddressingPerfectInstrumented.getTotalProbes();
             
         }
 
@@ -120,18 +143,23 @@ public class HashTableController implements Initializable {
         this.console.appendText("    Total probes for inserting data values: " + insertionLinearProbes + "\n\n");
         this.console.appendText("       Average probes made: " + insertionLinearProbes / (float) (trials * insertCount) + "\n\n");
         // ADD CODE HERE TO REPORT THE RESULTS FOR THE SUCCESS AND FAILURE SEARCHES
+        this.console.appendText("       Average probes made for successful search: " + successLinearProbes / (float) (trials*insertCount/2) + "\n\n");
+        this.console.appendText("       Average probes made for failed search: " + failureLinearProbes / (float) (trials * insertCount ) + "\n\n");
 
         this.console.appendText("Double hashing\n");
         this.console.appendText("    Total probes for inserting data values: " + insertionDoubleProbes + "\n\n");
         this.console.appendText("       Average probes made: " + insertionDoubleProbes / (float) (trials * insertCount) + "\n\n");
         // ADD CODE HERE TO REPORT THE RESULTS FOR THE SUCCESS AND FAILURE SEARCHES
+        this.console.appendText("       Average probes made for successful search: " + successDoubleProbes / (float) (trials*insertCount/2) + "\n\n");
+        this.console.appendText("       Average probes made for failed search: " + failureDoubleProbes / (float) (trials * insertCount) + "\n\n");
 
         this.console.appendText("Perfect hashing\n");
         this.console.appendText("    Total probes for inserting data values: " + insertionPerfectProbes + "\n\n");
         this.console.appendText("       Average probes made: " + insertionPerfectProbes / (float) (trials * insertCount) + "\n\n");
-        
+
         // ADD CODE HERE TO REPORT THE RESULTS FOR THE SUCCESS AND FAILURE SEARCHES
-    
+        this.console.appendText("       Average probes made for successful search: " + successPerfectProbes / (float) (trials*insertCount/2) + "\n\n");
+        this.console.appendText("       Average probes made for failed search: " + failurePerfectProbes / (float) (trials * insertCount ) + "\n\n");
     }
 
     private void RunHashTest(DictionaryInterface table) {
@@ -271,18 +299,19 @@ public class HashTableController implements Initializable {
     private String[] generateRandomData(int size) {
         String result[] = new String[size];
         HashedDictionaryOpenAddressingLinear<String, String> checkTable = new HashedDictionaryOpenAddressingLinear<String, String>();
-
         String firstSyl[] = {"ther", "fal", "sol", "cal", "com", "don", "gan", "tel", "fren", "ras", "tar", "men", "tri", "cap", "har"};
         String secondSyl[] = {"mo", "ta", "ra", "te", "bo", "bi", "du", "ca", "dan", "sen", "di", "no", "fe", "mi", "so"};
         String thirdSyl[] = {"tion", "ral", "tal", "ly", "nance", "tor", "ing", "ger", "ten", "ful", "son", "dar", "der", "den", "ton"};
 
         // ADD CODE TO GENERATE THE RANDOM WORDS
-        
         //>>>>>>>>>>> ADDED CODE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      
-        
+        Random randNum = new Random(seed);
+        for (int i = 0; i < size; i++) {
+            result[i] = firstSyl[randNum.nextInt(firstSyl.length)]
+                    + secondSyl[randNum.nextInt(secondSyl.length)]
+                    + thirdSyl[randNum.nextInt(thirdSyl.length)];
+        }
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        
         return result;
     }
 
@@ -401,35 +430,30 @@ public class HashTableController implements Initializable {
 // ADD A METHOD HERE TO INSERT THE FIRST HALF OF THE DATA VALUES IN AN ARRAY
 // INTO A DICTIONARY
 //>>>>>>>>>>> ADDED CODE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- 
-    
-    
+    private void insertHalfData(DictionaryInterface<String, String> dict, String[] data) {
+        for (int i = 0; i < data.length/2; i++) {
+            dict.add(data[i], data[i]);
+        }
+    }
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-
 // ADD A METHOD HERE TO SEARCH FOR ITEMS FROM THE FIRST HALF OF THE ARRAY
 // (SUCCESS SEARCHES)
 //>>>>>>>>>>> ADDED CODE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    
-    
-    
-    
+    private void searchFirstHalf(DictionaryInterface<String, String> dict, String[] data) {
+        for (int i = 0; i < data.length/2; i++) {
+            dict.contains(data[i]);
+        }
+    }
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-
 // ADD A METHOD HERE TO SEARCH FOR ITEMS FROM THE SECOND HALF OF THE ARRAY
 // (FAILURE SEARCHES)
 //>>>>>>>>>>> ADDED CODE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    
-    
-    
-    
+    private void searchSecondHalf(DictionaryInterface<String, String> dict, String[] data) {
+        for (int i = data.length/2; i < data.length; i++) {
+            dict.contains(data[i]);
+        }
+    }
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-    
-    
-    
-    
     /**
      * A displayable representation of an array of Objects where toString is
      * applied on each object in the array.
@@ -460,11 +484,11 @@ public class HashTableController implements Initializable {
 
         } catch (NumberFormatException e) {
             this.console.appendText("Could not convert input to a double value\n");
-            this.console.appendText(e.getMessage()+"\n");
+            this.console.appendText(e.getMessage() + "\n");
             this.console.appendText("Will use 0.5 as the default value\n");
         } catch (Exception e) {
             this.console.appendText("There was an error with System.in\n");
-            this.console.appendText(e.getMessage()+"\n");
+            this.console.appendText(e.getMessage() + "\n");
             this.console.appendText("Will use 0.5 as the default value\n");
         }
 
